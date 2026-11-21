@@ -1,0 +1,25 @@
+services:
+  monitor:
+    build: .
+    image: domain-cert-monitor:latest
+    env_file: .env
+    ports:
+      - "${PORT:-8080}:${PORT:-8080}"
+    volumes:
+      - data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os,urllib.request;urllib.request.urlopen(f'http://127.0.0.1:{os.environ.get(\"PORT\",\"8080\")}/healthz',timeout=4)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
+
+  mailpit:                 # optional, for testing alerts: docker compose --profile dev up
+    image: axllent/mailpit
+    profiles: [dev]
+    ports:
+      - "8025:8025"        # web UI; app uses SMTP_HOST=mailpit SMTP_PORT=1025 SMTP_SECURITY=none
+
+volumes:
+  data: {}
