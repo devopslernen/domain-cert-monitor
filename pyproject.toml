@@ -1,0 +1,45 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "domain-cert-monitor"
+dynamic = ["version"]
+description = "Watches domains and warns before TLS certificates or domain registrations expire."
+readme = "SPEC.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
+    "pydantic-settings>=2.4",
+    "httpx>=0.27",
+    "apscheduler>=3.10,<4",
+    "cryptography>=43",
+    "idna>=3.7",
+    "tldextract>=5.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+]
+
+[project.scripts]
+domain-cert-monitor = "domain_cert_monitor.__main__:main"
+
+[tool.hatch.version]
+path = "src/domain_cert_monitor/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/domain_cert_monitor"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Network tests are deselected by default. Run them with: pytest -m network
+addopts = "-m 'not network' --strict-markers"
+markers = [
+    "network: needs internet access (example.com, badssl.com, rdap.org); run with -m network",
+]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
