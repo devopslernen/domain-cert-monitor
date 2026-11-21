@@ -7,6 +7,7 @@ from dataclasses import replace
 from datetime import datetime, timedelta
 from typing import Any
 
+from .alerts import Alerter
 from .checks import CheckResult
 from .checks.rdap import registrable_domain
 from .clock import Clock
@@ -63,12 +64,14 @@ class CheckRunner:
         *,
         cert_check: CertCheck,
         rdap_lookup: RdapLookup,
+        alerter: Alerter | None = None,
         max_parallel: int = MAX_PARALLEL_CERT_CHECKS,
     ) -> None:
         self.repo = repo
         self.clock = clock
         self.cert_check = cert_check
         self.rdap_lookup = rdap_lookup
+        self.alerter = alerter
         self.in_flight: set[int] = set()
         self.last_run_at: datetime | None = None
         self._max_parallel = max_parallel
@@ -113,9 +116,12 @@ class CheckRunner:
             domains = [d for d in domains if d.id not in self.in_flight]
             self.in_flight.update(d.id for d in domains)
             log.info("full run started: %d domains", len(domains))
-            errors = await self._check(domains)
+            errors, alerts = await self._check(domains)
             self.last_run_at = self.clock.now()
-            log.info("full run finished: %d domains, %d errors", len(domains), errors)
+            log.info(
+                "full run finished: %d domains, %d errors, %d alerts sent",
+                len(domains), errors, alerts,
+            )
         except Exception:
             log.exception("full run failed")
         finally:
@@ -143,18 +149,29 @@ class CheckRunner:
 
     async def _run_one_body(self, domain: Domain) -> None:
         try:
-            errors = await self._check([domain])
-            log.info("checked %s (%d errors)", domain.hostname, errors)
+            errors, alerts = await self._check([domain])
+            log.info("checked %s (%d errors, %d alerts sent)", domain.hostname, errors, alerts)
         except Exception:
             log.exception("check of %s failed", domain.hostname)
 
     # --- shared ---------------------------------------------------------------------
 
-    async def _check(self, domains: list[Domain]) -> int:
+    async def _check(self, domains: list[Domain]) -> tuple[int, int]:
         """Check ``domains`` (already in ``in_flight``); remove each from ``in_flight``
-        once both of its results are written. Returns the number of check errors."""
+        once both of its results are written and alerts evaluated.
+        Returns (check errors, alerts sent)."""
         remaining = {d.id: 2 for d in domains}
-        errors = 0
+        errors = alerts = 0
+
+        async def alert(domain: Domain, result: CheckResult) -> None:
+            nonlocal alerts
+            if self.alerter is None:
+                return
+            try:
+                if await self.alerter.process(domain, result, self.clock.now()):
+                    alerts += 1
+            except Exception:
+                log.exception("%s alert for %s failed", result.kind, domain.hostname)
 
         def done(domain: Domain) -> None:
             remaining[domain.id] -= 1
@@ -169,7 +186,8 @@ class CheckRunner:
                 if result.error:
                     errors += 1
                 result = replace(result, checked_at=self.clock.now())
-                await asyncio.to_thread(self.repo.save_check, domain.id, StoredCheck(result))
+                if await asyncio.to_thread(self.repo.save_check, domain.id, StoredCheck(result)):
+                    await alert(domain, result)
             except Exception:
                 log.exception("saving certificate result for %s failed", domain.hostname)
             finally:
@@ -193,7 +211,9 @@ class CheckRunner:
                     try:
                         if result.error:
                             errors += 1
-                        await self._save_domain_result(domain, result)
+                        stored = await self._save_domain_result(domain, result)
+                        if stored is not None:
+                            await alert(domain, stored.result)
                     except Exception:
                         log.exception("saving domain result for %s failed", domain.hostname)
                     finally:
@@ -203,15 +223,17 @@ class CheckRunner:
             await asyncio.gather(*(cert_one(d) for d in domains), rdap_all())
         finally:
             self.in_flight.difference_update(d.id for d in domains)
-        return errors
+        return errors, alerts
 
-    async def _save_domain_result(self, domain: Domain, result: CheckResult) -> None:
-        def merge_and_save() -> None:
+    async def _save_domain_result(self, domain: Domain, result: CheckResult) -> StoredCheck | None:
+        """Merge and save; returns the stored row, or None if the domain is gone."""
+
+        def merge_and_save() -> StoredCheck | None:
             existing = self.repo.get_check(domain.id, "domain")
             stored = merge_domain_result(existing, result, self.clock.now())
-            self.repo.save_check(domain.id, stored)
+            return stored if self.repo.save_check(domain.id, stored) else None
 
-        await asyncio.to_thread(merge_and_save)
+        return await asyncio.to_thread(merge_and_save)
 
     @staticmethod
     async def _safe(check: Callable[[str], Awaitable[CheckResult]], arg: str, kind: str):

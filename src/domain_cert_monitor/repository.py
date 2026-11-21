@@ -168,3 +168,36 @@ class Repository:
             # Foreign key: the domain was removed while it was being checked.
             return False
         return True
+
+    # --- alerts_sent ------------------------------------------------------------
+
+    def alert_sent(self, domain_id: int, kind: Kind, threshold: int, expires_at: datetime) -> bool:
+        row = self._run(
+            lambda c: c.execute(
+                """
+                SELECT 1 FROM alerts_sent
+                WHERE domain_id = ? AND kind = ? AND threshold = ? AND expires_at = ?
+                """,
+                (domain_id, kind, threshold, to_text(expires_at)),
+            ).fetchone()
+        )
+        return row is not None
+
+    def record_alert(
+        self, domain_id: int, kind: Kind, threshold: int, expires_at: datetime, sent_at: datetime
+    ) -> bool:
+        """Insert an ``alerts_sent`` row (idempotent). Returns False if the domain is gone."""
+        try:
+            self._run(
+                lambda c: c.execute(
+                    """
+                    INSERT OR IGNORE INTO alerts_sent
+                        (domain_id, kind, threshold, expires_at, sent_at)
+                    VALUES (?, ?, ?, ?, ?)
+                    """,
+                    (domain_id, kind, threshold, to_text(expires_at), to_text(sent_at)),
+                )
+            )
+        except sqlite3.IntegrityError:
+            return False
+        return True

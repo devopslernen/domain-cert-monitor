@@ -13,12 +13,14 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from . import __version__, db
+from .alerts import Alerter
 from .api.routes import router
 from .checks import rdap
 from .checks.cert import check_cert
 from .checks.ratelimit import RateLimiter
 from .clock import Clock, SystemClock
 from .config import Settings
+from .mailer import Mailer, Sender
 from .repository import Repository
 from .runner import CertCheck, CheckRunner, RdapLookup
 from .scheduler import Scheduler
@@ -34,10 +36,12 @@ def create_app(
     *,
     cert_check: CertCheck | None = None,
     rdap_lookup: RdapLookup | None = None,
+    mailer: Sender | None = None,
     start_scheduler: bool = True,
 ) -> FastAPI:
-    """Build the app. ``cert_check`` / ``rdap_lookup`` replace the real checks
-    (tests); ``start_scheduler=False`` disables scheduled runs (tests)."""
+    """Build the app. ``cert_check`` / ``rdap_lookup`` / ``mailer`` replace the real
+    checks and SMTP (tests); ``start_scheduler=False`` disables scheduled runs (tests).
+    Without SMTP settings and without ``mailer``, alerts are skipped."""
     clock = clock or SystemClock()
 
     @asynccontextmanager
@@ -49,8 +53,14 @@ def create_app(
             headers={"User-Agent": USER_AGENT, "Accept": "application/rdap+json"},
         )
         lookup = rdap_lookup or partial(rdap.lookup, client=client, limiter=RateLimiter(1.0))
+        sender = mailer or (Mailer(settings) if settings.smtp_configured else None)
+        alerter = Alerter(repo, sender, settings.alert_thresholds, settings.base_url)
         runner = CheckRunner(
-            repo, clock, cert_check=cert_check or check_cert, rdap_lookup=lookup
+            repo,
+            clock,
+            cert_check=cert_check or check_cert,
+            rdap_lookup=lookup,
+            alerter=alerter,
         )
         scheduler = Scheduler(runner, settings.check_interval_hours) if start_scheduler else None
 
