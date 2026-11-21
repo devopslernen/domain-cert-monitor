@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Dashboard — domain-cert-monitor</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0}
+.app{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.45}
+.app.light{--bg:#F6F7F9;--surface:#FFFFFF;--surface-2:#F1F3F6;--border:#E2E5EA;--text:#12151A;--muted:#566070;--accent:#2457D6;--on-accent:#FFFFFF;--ok-fg:#12693A;--ok-bg:#E2F3E9;--ok-dot:#1F9D55;--warn-fg:#7E4C00;--warn-bg:#FCF0D8;--warn-dot:#E5A00D;--crit-fg:#B42318;--crit-bg:#FCE6E4;--crit-dot:#D92D20;--unk-fg:#4A5361;--unk-bg:#ECEEF2;--unk-dot:#98A1AE}
+.app.dark{--bg:#0E1116;--surface:#161A21;--surface-2:#1D222B;--border:#2A303B;--text:#E8EBF0;--muted:#9AA3B2;--accent:#6E9BFF;--on-accent:#0B0E13;--ok-fg:#63D493;--ok-bg:rgba(31,157,85,.16);--ok-dot:#2FB36A;--warn-fg:#F4C45C;--warn-bg:rgba(229,160,13,.16);--warn-dot:#E5A00D;--crit-fg:#FF8077;--crit-bg:rgba(217,45,32,.20);--crit-dot:#F04438;--unk-fg:#B0B8C4;--unk-bg:rgba(152,161,174,.15);--unk-dot:#7D8695}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+</style>
+</helmet>
+<div class="app {{mode}}">
+<header style="background: var(--surface); border-bottom: 1px solid var(--border)">
+<div style="max-width: 1200px; margin: 0 auto; padding: 12px 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 16px">
+<a href="Main.dc.html" style="display: flex; align-items: center; gap: 10px; color: var(--text); font-weight: 650; font-size: 15px">
+<svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6l8-3z"></path><path d="M9 12l2 2 4-4"></path></svg>
+<span class="mono">domain-cert-monitor</span>
+</a>
+<nav aria-label="Main" style="display: flex; gap: 4px">
+<a href="Main.dc.html" aria-current="page" style="padding: 10px 12px; border-radius: 6px; background: var(--surface-2); color: var(--text); font-weight: 500">Dashboard</a>
+<a href="Settings.dc.html" style="padding: 10px 12px; border-radius: 6px; color: var(--muted); font-weight: 500">Settings</a>
+</nav>
+<div style="flex: 1 1 0"></div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<button type="button" onClick="{{toggle}}" aria-label="{{toggleLabel}}" style="display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer">
+<sc-if value="{{isDark}}" hint-placeholder-val="{{ true }}"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg></sc-if>
+<sc-if value="{{isLight}}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"></path></svg></sc-if>
+</button>
+<button type="button" style="display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 16px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font: inherit; font-weight: 500; cursor: pointer">
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 0 0-14.9-3M4 4v4h4"></path><path d="M4 13a8 8 0 0 0 14.9 3M20 20v-4h-4"></path></svg>Check all</button>
+<button type="button" style="display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 16px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent); color: var(--on-accent); font: inherit; font-weight: 600; cursor: pointer">
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>Add domain</button>
+</div>
+</div>
+</header>
+
+<main style="max-width: 1200px; margin: 0 auto; padding: 32px 24px 48px; display: flex; flex-direction: column; gap: 24px">
+<div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px">
+<div>
+<h1 style="margin: 0; font-size: 26px; font-weight: 650; letter-spacing: -0.01em">Overview</h1>
+<p style="margin: 6px 0 0; color: var(--muted)">3 domains · last full check 21 Nov 2026, 15:12 · next in 5 h 46 min</p>
+</div>
+<p style="margin: 0; color: var(--muted)">Next to expire: <span class="mono" style="color: var(--text)">example.com</span> certificate in <strong style="color: var(--text)">55 days</strong></p>
+</div>
+
+<section aria-label="Status summary" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px">
+<div style="background: var(--crit-bg); border: 1px solid var(--crit-dot); border-radius: 12px; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--crit-fg)"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M9 9l6 6M15 9l-6 6"></path></svg>Critical</div>
+<div style="font-size: 40px; font-weight: 650; line-height: 1; letter-spacing: -0.02em; color: var(--text)">1</div>
+<div style="font-size: 13px; color: var(--muted)">7 days or less, or expired</div>
+</div>
+<div style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--warn-fg)"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2L12 3z"></path><path d="M12 10v4M12 17.5v.5"></path></svg>Expiring soon</div>
+<div style="font-size: 40px; font-weight: 650; line-height: 1; letter-spacing: -0.02em; color: var(--muted)">0</div>
+<div style="font-size: 13px; color: var(--muted)">30 days or less</div>
+</div>
+<div style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--unk-fg)"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6M12 17v.5"></path></svg>Unknown</div>
+<div style="font-size: 40px; font-weight: 650; line-height: 1; letter-spacing: -0.02em; color: var(--text)">1</div>
+<div style="font-size: 13px; color: var(--muted)">Expiry date not available</div>
+</div>
+<div style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--ok-fg)"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M8 12l3 3 5-6"></path></svg>OK</div>
+<div style="font-size: 40px; font-weight: 650; line-height: 1; letter-spacing: -0.02em; color: var(--text)">1</div>
+<div style="font-size: 13px; color: var(--muted)">More than 30 days left</div>
+</div>
+</section>
+
+<section aria-labelledby="domains-h" style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden">
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px">
+<h2 id="domains-h" style="margin: 0; font-size: 16px; font-weight: 600">Domains</h2>
+<span style="font-size: 13px; color: var(--muted)">Sorted by urgency</span>
+</div>
+<div style="overflow-x: auto">
+<table style="width: 100%; min-width: 900px; border-collapse: collapse; font-variant-numeric: tabular-nums">
+<thead>
+<tr style="background: var(--surface-2); color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; text-align: left">
+<th scope="col" style="padding: 10px 20px; font-weight: 600">Hostname</th>
+<th scope="col" style="padding: 10px 16px; font-weight: 600">Certificate expires</th>
+<th scope="col" style="padding: 10px 16px; font-weight: 600">Domain expires</th>
+<th scope="col" style="padding: 10px 16px; font-weight: 600">Days left</th>
+<th scope="col" style="padding: 10px 16px; font-weight: 600">Status</th>
+<th scope="col" style="padding: 10px 16px; font-weight: 600">Last check</th>
+<th scope="col" style="padding: 10px 20px; font-weight: 600; text-align: right"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Actions</span></th>
+</tr>
+</thead>
+<tbody>
+<tr style="border-top: 1px solid var(--border)">
+<td style="padding: 14px 20px"><a href="Detail.dc.html" class="mono" style="color: var(--text); font-weight: 500">expired.badssl.com</a></td>
+<td style="padding: 14px 16px"><div>12 Apr 2015</div><div style="font-size: 12px; color: var(--crit-fg)">Expired</div></td>
+<td style="padding: 14px 16px"><div>17 Mar 2027</div><div style="font-size: 12px; color: var(--muted)">via RDAP</div></td>
+<td style="padding: 14px 16px"><div style="font-weight: 650; color: var(--crit-fg)">−4241</div><div style="font-size: 12px; color: var(--muted)">certificate</div></td>
+<td style="padding: 14px 16px"><span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; background: var(--crit-bg); color: var(--crit-fg)"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M9 9l6 6M15 9l-6 6"></path></svg>Expired</span></td>
+<td style="padding: 14px 16px"><div>14 min ago</div><div style="font-size: 12px; color: var(--muted)">21 Nov, 15:12</div></td>
+<td style="padding: 14px 20px; text-align: right"><button type="button" aria-label="Check expired.badssl.com now" style="display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font: inherit; font-weight: 500; cursor: pointer; white-space: nowrap"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 0 0-14.9-3M4 4v4h4"></path><path d="M4 13a8 8 0 0 0 14.9 3M20 20v-4h-4"></path></svg>Check now</button></td>
+</tr>
+<tr style="border-top: 1px solid var(--border)">
+<td style="padding: 14px 20px"><a href="Detail.dc.html" class="mono" style="color: var(--text); font-weight: 500">example.de</a></td>
+<td style="padding: 14px 16px"><div>2 Feb 2027</div><div style="font-size: 12px; color: var(--muted)">in 73 days</div></td>
+<td style="padding: 14px 16px"><div style="color: var(--unk-fg)">Unknown</div><div style="font-size: 12px; color: var(--muted)">not published by registry</div></td>
+<td style="padding: 14px 16px"><div style="font-weight: 650">73</div><div style="font-size: 12px; color: var(--muted)">certificate only</div></td>
+<td style="padding: 14px 16px"><span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; background: var(--unk-bg); color: var(--unk-fg)"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6M12 17v.5"></path></svg>Unknown</span></td>
+<td style="padding: 14px 16px"><div>14 min ago</div><div style="font-size: 12px; color: var(--muted)">21 Nov, 15:12</div></td>
+<td style="padding: 14px 20px; text-align: right"><button type="button" aria-label="Check example.de now" style="display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font: inherit; font-weight: 500; cursor: pointer; white-space: nowrap"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 0 0-14.9-3M4 4v4h4"></path><path d="M4 13a8 8 0 0 0 14.9 3M20 20v-4h-4"></path></svg>Check now</button></td>
+</tr>
+<tr style="border-top: 1px solid var(--border)">
+<td style="padding: 14px 20px"><a href="Detail.dc.html" class="mono" style="color: var(--text); font-weight: 500">example.com</a></td>
+<td style="padding: 14px 16px"><div>15 Jan 2027</div><div style="font-size: 12px; color: var(--muted)">in 55 days</div></td>
+<td style="padding: 14px 16px"><div>13 Aug 2027</div><div style="font-size: 12px; color: var(--muted)">in 265 days</div></td>
+<td style="padding: 14px 16px"><div style="font-weight: 650">55</div><div style="font-size: 12px; color: var(--muted)">certificate</div></td>
+<td style="padding: 14px 16px"><span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; background: var(--ok-bg); color: var(--ok-fg)"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M8 12l3 3 5-6"></path></svg>OK</span></td>
+<td style="padding: 14px 16px"><div>14 min ago</div><div style="font-size: 12px; color: var(--muted)">21 Nov, 15:12</div></td>
+<td style="padding: 14px 20px; text-align: right"><button type="button" aria-label="Check example.com now" style="display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font: inherit; font-weight: 500; cursor: pointer; white-space: nowrap"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 0 0-14.9-3M4 4v4h4"></path><path d="M4 13a8 8 0 0 0 14.9 3M20 20v-4h-4"></path></svg>Check now</button></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"mode":{"editor":"enum","options":["dark","light"],"default":"dark","section":"Theme"},"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const mode = (this.state && this.state.mode) || this.props.mode || 'dark';
+    const isDark = mode === 'dark';
+    return {
+      mode: mode,
+      isDark: isDark,
+      isLight: !isDark,
+      toggleLabel: isDark ? 'Switch to light mode' : 'Switch to dark mode',
+      toggle: () => this.setState({ mode: isDark ? 'light' : 'dark' })
+    };
+  }
+}
+</script>
+</body>
+</html>

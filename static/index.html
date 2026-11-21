@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>domain-cert-monitor</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232457D6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6l8-3z'/%3E%3Cpath d='M9 12l2 2 4-4'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="app.css">
+<script>
+  // Set the theme before first paint: saved choice, else the OS preference.
+  (function () {
+    var t = null;
+    try { t = localStorage.getItem("dcm-theme"); } catch (e) {}
+    if (t !== "light" && t !== "dark") {
+      t = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    document.documentElement.setAttribute("data-theme", t);
+  })();
+</script>
+<script src="app.js" defer></script>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="#/">
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6l8-3z"/><path d="M9 12l2 2 4-4"/></svg>
+      <span class="mono">domain-cert-monitor</span>
+    </a>
+    <nav class="nav" aria-label="Main">
+      <a href="#/" data-nav="dashboard">Dashboard</a>
+      <a href="#/settings" data-nav="settings">Settings</a>
+    </nav>
+    <div class="spacer"></div>
+    <div class="actions">
+      <button type="button" class="btn btn-icon" id="theme-toggle" aria-label="Switch theme"></button>
+      <button type="button" class="btn" id="check-all"></button>
+      <button type="button" class="btn btn-primary" id="add-open"></button>
+    </div>
+  </div>
+</header>
+
+<div id="app" aria-live="polite">
+  <main><p class="muted">Loading…</p></main>
+</div>
+
+<noscript>
+  <main><div class="banner error"><p>This page needs JavaScript. The JSON API is documented at <a href="api/docs">/api/docs</a>.</p></div></main>
+</noscript>
+
+<dialog id="add-dialog" aria-labelledby="add-title">
+  <form id="add-form" method="dialog" novalidate>
+    <h2 id="add-title">Add domain</h2>
+    <p class="muted">Enter a hostname. A URL works too: the scheme, path and port are removed.</p>
+    <div>
+      <label for="add-hostname">Hostname</label>
+      <input type="text" id="add-hostname" name="hostname" class="mono" autocomplete="off"
+             autocapitalize="off" spellcheck="false" placeholder="example.com" required
+             aria-describedby="add-error">
+      <div class="field-error" id="add-error" role="alert"></div>
+    </div>
+    <div class="dialog-actions">
+      <button type="button" class="btn" id="add-cancel">Cancel</button>
+      <button type="submit" class="btn btn-primary" id="add-submit">Add</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="toast" class="toast" role="status" hidden></div>
+</body>
+</html>
