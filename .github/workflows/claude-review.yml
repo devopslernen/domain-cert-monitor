@@ -1,0 +1,40 @@
+name: Claude review
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  id-token: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Run Claude review
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
+            Review this pull request. Read the project's SPEC.md and
+            ARCHITECTURE.md for context, then check the diff for:
+            - bugs and correctness problems
+            - security issues
+            - missing or inadequate tests
+
+            Use `gh pr diff` and `gh pr view` to read the pull request.
+            When you are done, post exactly one comment with your findings
+            using `gh pr comment`. Be concise and point to files and lines.
+          claude_args: |
+            --allowedTools "Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*)"
