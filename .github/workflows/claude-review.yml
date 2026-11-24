@@ -1,0 +1,42 @@
+name: Claude review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  id-token: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
+            Review this pull request. Read the diff with `gh pr diff` and the
+            PR description with `gh pr view`. SPEC.md and ARCHITECTURE.md in the
+            repository describe the intended behaviour.
+
+            Check the diff for:
+            - bugs and logic errors
+            - security problems
+            - missing or insufficient tests
+
+            Post exactly one comment with your findings using
+            `gh pr comment ${{ github.event.pull_request.number }} --body "..."`.
+            Refer to code as file:line. If you find nothing, say so briefly.
+          claude_args: |
+            --allowedTools "Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*)"
